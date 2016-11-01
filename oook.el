@@ -1,7 +1,7 @@
 ;;; oook.el --- Evaluate XQuery  -*- lexical-binding: t; -*-
 
 ;; Author: Artem Malyshev <proofit404@gmail.com>
-;; URL: https://github.com/xquery-mode/oook
+;; URL: https://github.com/xquery-mode/Oook
 ;; Version: 0.0.1
 ;; Package-Requires: ((cider "0.13.0"))
 
@@ -34,8 +34,8 @@
 
 (defvar oook-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") 'oook-eval-buffer)
-    (define-key map (kbd "C-M-x") 'oook-eval-function)
+    (define-key map (kbd "C-c C-k") 'oook-eval-buffer)
+    (define-key map (kbd "C-c C-c") 'oook-eval-function)
     (define-key map (kbd "C-c C-l") 'oook-eval-line)
     (define-key map (kbd "C-c C-r") 'oook-eval-region)
     (define-key map (kbd "M-:") 'oook-eval-string)
