@@ -1,3 +1,8 @@
+> Oook -- is all the [Librarian](https://en.wikipedia.org/wiki/Unseen_University#Librarian)
+> at the university of the Discworld ever utters. He is the sole staff
+> member of the greatest database of knowledge, and as such offers a
+> very versatile and helpful interface to it.
+
 # Oook
 
 Evaluate XQuery documents in a different ways.
