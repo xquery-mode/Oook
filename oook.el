@@ -1,7 +1,7 @@
 ;;; oook.el --- Evaluate XQuery  -*- lexical-binding: t; -*-
 
 ;; Author: Artem Malyshev <proofit404@gmail.com>
-;; URL: https://github.com/xquery-mode/cider-any
+;; URL: https://github.com/xquery-mode/oook
 ;; Version: 0.0.1
 ;; Package-Requires: ((cider "0.13.0"))
 

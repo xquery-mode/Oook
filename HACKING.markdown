@@ -17,19 +17,19 @@ docker build -t marklogic:8 .
 * Start MarkLogic server inside docker
 
 ```shell
-docker run -t -i --name cider-any -p 7997:7997 -p 7999:7999 -p 8000:8000 -p 8001:8001 -p 8002:8002 -p 8889:8889 marklogic:8
+docker run -t -i --name oook -p 7997:7997 -p 7999:7999 -p 8000:8000 -p 8001:8001 -p 8002:8002 -p 8889:8889 marklogic:8
 ```
 
 * You can pause MarkLogic server
 
 ```shell
-docker stop cider-any
+docker stop oook
 ```
 
 * You can resume MarkLogic server
 
 ```shell
-docker start -i -a cider-any
+docker start -i -a oook
 ```
 
 * Open http://localhost:8001/ in your browser and follow installation steps
