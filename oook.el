@@ -12,6 +12,7 @@
 (require 'cl-lib)
 (require 'cider)
 (require 'page-break-lines)
+(require 'subr-x)
 
 (defgroup oook nil
   "Evaluate any buffer in cider."
@@ -27,10 +28,26 @@
   :type 'function
   :group 'oook-eval)
 
+(defcustom oook-error-handler 'oook-display-error
+  "Error handle function."
+  :type 'function
+  :group 'oook)
+
 (defcustom oook-eval-buffer-template "*XQuery-Result-%s*"
   "Base buffer name to show XQuery documents."
   :type 'string
   :group 'oook-eval)
+
+(defcustom oook-error-buffer-template "*XQuery-Error-%s*"
+  "Base buffer name to show XQuery errors."
+  :type 'string
+  :group 'oook)
+
+(defcustom oook-marklogic-install-dir
+  (if (eq system-type 'windows-nt)
+      "C:\\Program Files\\MarkLogic"
+    "/opt/MarkLogic")
+  "MarkLogic server installation path.")
 
 (defvar oook-mode-map
   (let ((map (make-sparse-keymap)))
@@ -47,7 +64,8 @@
   (interactive)
   (oook-eval
    (buffer-substring-no-properties (point-min) (point-max))
-   oook-eval-handler))
+   oook-eval-handler
+   oook-error-handler))
 
 (defun oook-eval-function ()
   "Eval current function in cider."
@@ -60,7 +78,8 @@
     (save-excursion
       (end-of-defun)
       (point)))
-   oook-eval-handler))
+   oook-eval-handler
+   oook-error-handler))
 
 (defun oook-eval-line ()
   "Eval current line in cider."
@@ -69,7 +88,8 @@
    (buffer-substring-no-properties
     (line-beginning-position)
     (line-end-position))
-   oook-eval-handler))
+   oook-eval-handler
+   oook-error-handler))
 
 (defun oook-eval-region ()
   "Eval current region in cider."
@@ -80,12 +100,13 @@
      (buffer-substring-no-properties
       (region-beginning)
       (region-end)))
-   oook-eval-handler))
+   oook-eval-handler
+   oook-error-handler))
 
 (defun oook-eval-string ()
   "Eval string in cider."
   (interactive)
-  (oook-eval (read-string "XQuery: ") oook-eval-handler))
+  (oook-eval (read-string "XQuery: ") oook-eval-handler oook-error-handler))
 
 ;;;###autoload
 (define-minor-mode oook-mode
@@ -239,6 +260,76 @@ ERRBACK if specified must have following signature:
 
 (add-hook 'nrepl-connected-hook 'oook-connected)
 (add-hook 'nrepl-disconnected-hook 'oook-disconnected)
+
+
+;;; Error handling.
+
+(defvar-local oook-origin-buffer nil)
+
+(defvar oook-compilation-regexp-alist
+  `(("^\\(in \\(.*\\), \\)?on line \\([[:digit:]]+\\)"
+     (,(lambda ()
+         (if (match-string-no-properties 2)
+             (concat "<<marklogic>>" (match-string-no-properties 2))
+           oook-origin-buffer))
+      "%s")
+     3))
+  "`compilation-error-regexp-alist' for uruk errors.")
+
+(defun oook-display-error (error &rest _args)
+  "Show ERROR in the buffer."
+  (pop-to-buffer
+   (let ((origin (buffer-file-name)))
+     (with-current-buffer
+         (get-buffer-create (format oook-error-buffer-template (buffer-name)))
+       (fundamental-mode)
+       (read-only-mode -1)
+       (erase-buffer)
+       (insert error)
+       (goto-char (point-min))
+       (compilation-mode)
+       (set (make-local-variable 'compilation-error-regexp-alist)
+            oook-compilation-regexp-alist)
+       (setq oook-origin-buffer origin)
+       (current-buffer)))))
+
+(defun oook-document-get (document)
+  "Execute document-get request on DOCUMENT using MarkLogic service."
+  (car (oook-eval-sync (format "
+xquery version \"1.0-ml\";
+try {xdmp:document-get(\"%sModules%s\")}
+catch ($exception) {()};
+if (xdmp:modules-database() = 0)
+then
+  try {xdmp:document-get(fn:replace(fn:concat(xdmp:modules-root(), \"%s\"), \"/+\", \"/\"))}
+  catch ($exception) {()}
+else
+  fn:doc(\"%s\")
+" (file-name-directory (file-name-as-directory oook-marklogic-install-dir)) document document document))))
+
+(defun oook-file-name-handler (operation &rest args)
+  "File handler for MarkLogic documents.
+
+See `file-name-handler-alist' for OPERATION and ARGS meaning."
+  (let ((filename (car args)))
+    (cl-case operation
+      ((expand-file-name file-truename) filename)
+      ((file-exists-p file-remote-p file-regular-p) t)
+      ((file-directory-p file-writable-p vc-registered) nil)
+      (file-attributes (list nil 1 0 0 '(22095 15153 0 0) '(22095 15153 0 0) '(22095 15153 0 0) 197867 "-rw-r--r--" t (abs (random)) (abs (random))))
+      (file-modes (file-modes (locate-library "files")))
+      (insert-file-contents (let* ((document (string-remove-prefix "<<marklogic>>" filename))
+                                   (result (or (oook-document-get document)
+                                               (format "Unable to read %s document" document))))
+                              (insert result)
+                              (setq buffer-file-name filename)
+                              (list filename (length result))))
+      (t (let ((inhibit-file-name-handlers '(oook-file-name-handler))
+               (inhibit-file-name-operation operation))
+           (apply operation args))))))
+
+(add-to-list 'file-name-handler-alist
+             '("\\`<<marklogic>>" . oook-file-name-handler))
 
 (provide 'oook)
 
