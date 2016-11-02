@@ -43,10 +43,7 @@
   :type 'string
   :group 'oook)
 
-(defcustom oook-marklogic-install-dir
-  (if (eq system-type 'windows-nt)
-      "C:\\Program Files\\MarkLogic"
-    "/opt/MarkLogic")
+(defcustom oook-marklogic-install-dir "/opt/MarkLogic/"
   "MarkLogic server installation path.")
 
 (defvar oook-mode-map
