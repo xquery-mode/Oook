@@ -33,7 +33,7 @@
 
 (defvar oook-to-file-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-c") 'oook-eval-buffer-to-file)
+    (define-key map [remap oook-eval-buffer] 'oook-eval-buffer-to-file)
     map)
   "Keymap for `oook-to-file-mode'.")
 
