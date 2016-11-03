@@ -301,7 +301,12 @@ then
   try {xdmp:filesystem-file(fn:replace(fn:concat(xdmp:modules-root(), \"%s\"), \"/+\", \"/\"))}
   catch ($exception) {()}
 else
-  fn:doc(\"%s\")
+  xdmp:eval('xquery version \"1.0-ml\";
+             fn:doc(\"%s\")',
+            (),
+            <options xmlns=\"xdmp:eval\">
+              <database>{xdmp:modules-database()}</database>
+            </options>)
 " (file-name-directory (file-name-as-directory oook-marklogic-install-dir)) document document document))))
 
 (defun oook-file-name-handler (operation &rest args)
