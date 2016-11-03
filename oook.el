@@ -294,11 +294,11 @@ ERRBACK if specified must have following signature:
   "Execute document-get request on DOCUMENT using MarkLogic service."
   (car (oook-eval-sync (format "
 xquery version \"1.0-ml\";
-try {xdmp:document-get(\"%sModules%s\")}
+try {xdmp:filesystem-file(\"%sModules%s\")}
 catch ($exception) {()};
 if (xdmp:modules-database() = 0)
 then
-  try {xdmp:document-get(fn:replace(fn:concat(xdmp:modules-root(), \"%s\"), \"/+\", \"/\"))}
+  try {xdmp:filesystem-file(fn:replace(fn:concat(xdmp:modules-root(), \"%s\"), \"/+\", \"/\"))}
   catch ($exception) {()}
 else
   fn:doc(\"%s\")
