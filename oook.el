@@ -152,14 +152,68 @@ ERRBACK if specified must have following signature:
 (defun oook-get-form ()
   "Clojure form for XQuery document evaluation."
   (format "(do
+             (require '[clojure.string :as string])
              (require '[uruk.core :as uruk])
-             (set! *print-length* nil)
-             (set! *print-level* nil)
-             (let [host \"%s\"
-                   port %s
-                   db %s]
-               (with-open [session (uruk/create-default-session (uruk/make-hosted-content-source host port db))]
-                 (doall (map str (uruk/execute-xquery session \"%%s\"))))))"
+             (try
+               (do
+                 (set! *print-length* nil)
+                 (set! *print-level* nil)
+                 (let [host \"%s\"
+                       port %s
+                       db %s]
+                   (with-open [session (uruk/create-default-session (uruk/make-hosted-content-source host port db))]
+                     (doall (map str (uruk/execute-xquery session \"%%s\"))))))
+               (catch com.marklogic.xcc.exceptions.XQueryException error
+                 (let [nl (System/getProperty \"line.separator\")
+                       format-str (.getFormatString error)
+                       code (.getCode error)
+                       data (.getData error)
+                       stack (.getStack error)
+                       session (.. error (getRequest) (getSession) (toString))
+                       version (com.marklogic.xcc.Version/getVersionString)
+                       server-version (.. error (getRequest) (getSession) (getServerVersion))]
+                   (throw (Exception.
+                           (string/join
+                            (concat
+                             (list
+                              (if format-str
+                                format-str
+                                (string/join \" \" (cons code data)))
+                              nl)
+                             (map (fn [frame]
+                                    (let [uri (.getUri frame)
+                                          line (.getLineNumber frame)
+                                          operation (.getOperation frame)
+                                          variables (.getVariables frame)
+                                          context-item (.getContextItem frame)
+                                          context-position (.getContextPosition frame)]
+                                      (string/join
+                                       (remove nil?
+                                               (concat (when uri
+                                                         (list \"in \" uri))
+                                                       (when (not (zero? line))
+                                                         (list (when uri \", \") \"on line \" (str line)))
+                                                       (list nl)
+                                                       (when operation
+                                                         (list \"in \" operation nl))
+                                                       (when variables
+                                                         (concat
+                                                          (map (fn [variable]
+                                                                 (let [name (.. variable (getName) (getLocalname))
+                                                                       value (.. variable (getValue) (asString))]
+                                                                   (when (and name value)
+                                                                     (string/join (list \"  $\" name \" = \" value nl)))))
+                                                               variables)
+                                                          (when context-item
+                                                            (list \"  context-item() = \" context-item nl))
+                                                          (when (not (zero? context-position))
+                                                            (list \"  context-position() = \" context-position nl)))))))))
+                                  stack)
+                             (list \"[Session: \" session \"]\" nl)
+                             (list \"[Client: XCC/\" version)
+                             (when server-version
+                               (list \", Server: XDBC/\" server-version))
+                             (list \"]\" nl)))))))))"
           (plist-get oook-connection :host)
           (plist-get oook-connection :port)
           (oook-plist-to-map oook-connection)))
