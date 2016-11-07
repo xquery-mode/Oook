@@ -38,7 +38,7 @@
     (define-key map (kbd "C-c C-c") 'oook-eval-function)
     (define-key map (kbd "C-c C-l") 'oook-eval-line)
     (define-key map (kbd "C-c C-r") 'oook-eval-region)
-    (define-key map (kbd "M-:") 'oook-eval-string)
+    (define-key map (kbd "C-c M-:") 'oook-eval-string)
     map)
   "Keymap for `oook-mode'.")
 
