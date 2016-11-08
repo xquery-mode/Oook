@@ -141,7 +141,11 @@ ERRBACK if specified must have following signature:
                    port %s
                    db %s]
                (with-open [session (uruk/create-default-session (uruk/make-hosted-content-source host port db))]
-                 (doall (map str (uruk/execute-xquery session \"%%s\"))))))"
+                 (doall (map (fn [it]
+                               (if (instance? (Class/forName \"[B\") it)
+                                 (String. it)
+                                 (str it)))
+                             (uruk/execute-xquery session \"%%s\"))))))"
           (plist-get oook-connection :host)
           (plist-get oook-connection :port)
           (oook-plist-to-map oook-connection)))
