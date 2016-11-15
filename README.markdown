@@ -1,11 +1,17 @@
+# Oook
+
 > Oook -- is all the [Librarian](https://en.wikipedia.org/wiki/Unseen_University#Librarian)
 > at the university of the Discworld ever utters. He is the sole staff
 > member of the greatest database of knowledge, and as such offers a
 > very versatile and helpful interface to it.
 
-# Oook
-
 Evaluate XQuery documents in a different ways.
+
+## Successor of cider-any
+
+Oook replaces [cider-any](https://github.com/xquery-mode/cider-any).
+We decided to get rid of the backend design of cider-any and have a
+simpler interface that just lets you evaluate XQuery documents.
 
 # XQuery
 
