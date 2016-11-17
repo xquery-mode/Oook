@@ -122,11 +122,11 @@
 
 CALLBACK function must have following signature:
 
-    (CALLBACK RESULT &rest ARGS)
+    (CALLBACK ID RESULT &rest ARGS)
 
 ERRBACK if specified must have following signature:
 
-    (ERRBACK ERROR &rest ARGS)"
+    (ERRBACK ID ERROR &rest ARGS)"
   (cider-ensure-connected)
   (let* ((arg (oook-escape xquery))
          (form (format (oook-get-form) arg))
@@ -219,19 +219,40 @@ ERRBACK if specified must have following signature:
           (oook-plist-to-map oook-connection)))
 
 (defun oook-make-nrepl-handler (callback errback &rest args)
-  (nrepl-make-response-handler
-   (current-buffer)
-   (lambda (buffer value)
-     (with-current-buffer buffer
-       (apply callback (and value (read value)) args)))
-   (lambda (_buffer out)
-     (cider-emit-interactive-eval-output out))
-   (lambda (buffer err)
-     (with-current-buffer buffer
-       (if errback
-           (apply errback err args)
-         (cider-emit-interactive-eval-err-output err))))
-   '()))
+  ;; This function mostly repeat `nrepl-make-response-handler' logic.
+  ;; One significant difference here that we pass request id inside
+  ;; value and error handlers to support streaming results.  In
+  ;; purpose of large tracebacks.
+  (let ((buffer (current-buffer)))
+    (lambda (response)
+      (nrepl-dbind-response response (value ns out err status id pprint-out)
+        (when (buffer-live-p buffer)
+          (with-current-buffer buffer
+            (when (and ns (not (derived-mode-p 'clojure-mode)))
+              (cider-set-buffer-ns ns))))
+        (cond (value
+               (with-current-buffer buffer
+                 (apply callback id (and value (read value)) args)))
+              (out
+               (cider-emit-interactive-eval-output out))
+              (pprint-out
+               (cider-emit-interactive-eval-output pprint-out))
+              (err
+               (with-current-buffer buffer
+                 (if errback
+                     (apply errback id err args)
+                   (cider-emit-interactive-eval-err-output err))))
+              (status
+               (when (member "interrupted" status)
+                 (message "Evaluation interrupted."))
+               (when (member "eval-error" status)
+                 (funcall nrepl-err-handler))
+               (when (member "namespace-not-found" status)
+                 (message "Namespace not found."))
+               (when (member "need-input" status)
+                 (cider-need-input buffer))
+               (when (member "done" status)
+                 (nrepl--mark-id-completed id))))))))
 
 (defun oook-plist-to-map (plist)
   "Convert Elisp PLIST into Clojure map."
@@ -268,7 +289,7 @@ ERRBACK if specified must have following signature:
 (add-hook 'oook-after-display-hook 'view-mode)
 (add-hook 'oook-after-display-hook 'page-break-lines-mode)
 
-(defun oook-display-buffer (result &rest _args)
+(defun oook-display-buffer (_id result &rest _args)
   "Show RESULT in the buffer."
   (if (not result)
       (prog1 nil
@@ -327,7 +348,7 @@ ERRBACK if specified must have following signature:
      3))
   "`compilation-error-regexp-alist' for uruk errors.")
 
-(defun oook-display-error (error &rest _args)
+(defun oook-display-error (_id error &rest _args)
   "Show ERROR in the buffer."
   (pop-to-buffer
    (let ((origin (buffer-file-name)))
