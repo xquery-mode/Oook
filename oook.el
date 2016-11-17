@@ -171,7 +171,8 @@ ERRBACK if specified must have following signature:
                        stack (.getStack error)
                        session (.. error (getRequest) (getSession) (toString))
                        version (com.marklogic.xcc.Version/getVersionString)
-                       server-version (.. error (getRequest) (getSession) (getServerVersion))]
+                       server-version (.. error (getRequest) (getSession) (getServerVersion))
+                       stacktrace (.getStackTrace error)]
                    (throw (Exception.
                            (string/join
                             (concat
@@ -213,7 +214,8 @@ ERRBACK if specified must have following signature:
                              (list \"[Client: XCC/\" version)
                              (when server-version
                                (list \", Server: XDBC/\" server-version))
-                             (list \"]\" nl)))))))))"
+                             (list \"]\" nl)
+                             (list nl \"Stacktrace:\" nl nl (string/join nl (map str stacktrace)) nl)))))))))"
           (plist-get oook-connection :host)
           (plist-get oook-connection :port)
           (oook-plist-to-map oook-connection)))
@@ -338,6 +340,8 @@ ERRBACK if specified must have following signature:
 
 (defvar-local oook-origin-buffer nil)
 
+(defvar-local oook-last-failed-request nil)
+
 (defvar oook-compilation-regexp-alist
   `(("^\\(in \\(.*\\), \\)?on line \\([[:digit:]]+\\)"
      (,(lambda ()
@@ -348,22 +352,26 @@ ERRBACK if specified must have following signature:
      3))
   "`compilation-error-regexp-alist' for uruk errors.")
 
-(defun oook-display-error (_id error &rest _args)
+(defun oook-display-error (id error &rest _args)
   "Show ERROR in the buffer."
   (pop-to-buffer
    (let ((origin (buffer-file-name)))
      (with-current-buffer
          (get-buffer-create (format oook-error-buffer-template (buffer-name)))
-       (fundamental-mode)
-       (read-only-mode -1)
-       (erase-buffer)
-       (insert error)
-       (goto-char (point-min))
-       (compilation-mode)
-       (set (make-local-variable 'compilation-error-regexp-alist)
-            oook-compilation-regexp-alist)
-       (setq oook-origin-buffer origin)
-       (current-buffer)))))
+       (let ((failed-id oook-last-failed-request))
+         (fundamental-mode)
+         (read-only-mode -1)
+         (if (equal failed-id id)
+             (goto-char (point-max))
+           (erase-buffer))
+         (insert error)
+         (goto-char (point-min))
+         (compilation-mode)
+         (set (make-local-variable 'compilation-error-regexp-alist)
+              oook-compilation-regexp-alist)
+         (setq oook-origin-buffer origin
+               oook-last-failed-request id)
+         (current-buffer))))))
 
 (defun oook-document-get (document)
   "Execute document-get request on DOCUMENT using MarkLogic service."
