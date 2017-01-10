@@ -196,21 +196,24 @@ ERRBACK if specified must have following signature:
 (add-hook 'oook-after-display-hook 'view-mode)
 (add-hook 'oook-after-display-hook 'page-break-lines-mode)
 
-(defun oook-display-buffer (result &rest _args)
+(defun oook-display-buffer (result &rest args)
   "Show RESULT in the buffer."
-  (if (not result)
-      (prog1 nil
-        (message "XQuery returned an empty sequence"))
-    (pop-to-buffer
-     (with-current-buffer
-         (get-buffer-create (format oook-eval-buffer-template (buffer-name)))
-       (fundamental-mode)
-       (view-mode -1)
-       (erase-buffer)
-       (oook-insert-result result)
-       (normal-mode)
-       (run-hooks 'oook-after-display-hook)
-       (current-buffer)))))
+  (let ((eval-in-buffer (plist-get args :eval-in-buffer)))
+    (if (not result)
+        (prog1 nil
+          (message "XQuery returned an empty sequence"))
+      (pop-to-buffer
+       (with-current-buffer
+           (get-buffer-create (format oook-eval-buffer-template (buffer-name)))
+         (fundamental-mode)
+         (view-mode -1)
+         (erase-buffer)
+         (oook-insert-result result)
+         (normal-mode)
+         (run-hooks 'oook-after-display-hook)
+         (when eval-in-buffer
+          (eval eval-in-buffer))
+         (current-buffer))))))
 
 (defun oook-insert-result (result)
   (let ((old-position (point)))

@@ -12,14 +12,16 @@
 
 (defun oook-eval-to-file-handler (result &rest args)
   (let ((res (apply oook-eval-handler result args))
-        (filename (car args)))
+        (filename (plist-get args :filename)))
     (when res
       (with-current-buffer res
         (setq buffer-file-name filename)
         (normal-mode t)
         (rename-buffer filename t)
         (set-buffer-modified-p nil)
-        (run-hooks 'oook-after-display-hook)))
+        (run-hooks 'oook-after-display-hook)
+        (view-mode -1) ;; disable view-mode even if viewmode is in ook-after-display-hook
+        ))
     res))
 
 (defun oook-eval-buffer-to-file ()
