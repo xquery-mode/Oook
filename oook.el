@@ -198,13 +198,15 @@ ERRBACK if specified must have following signature:
 
 (defun oook-display-buffer (result &rest args)
   "Show RESULT in the buffer."
-  (let ((eval-in-buffer (plist-get args :eval-in-buffer)))
+  (let ((eval-in-buffer (plist-get args :eval-in-buffer))
+        (buffer-name (plist-get args :buffer-name)))
     (if (not result)
         (prog1 nil
           (message "XQuery returned an empty sequence"))
       (pop-to-buffer
        (with-current-buffer
-           (get-buffer-create (format oook-eval-buffer-template (buffer-name)))
+           (get-buffer-create (or buffer-name
+                                  (format oook-eval-buffer-template (buffer-name))))
          (fundamental-mode)
          (view-mode -1)
          (erase-buffer)
