@@ -12,7 +12,8 @@
 
 (defun oook-eval-to-file-handler (result &rest args)
   (let ((res (apply oook-eval-handler result args))
-        (filename (plist-get args :filename)))
+        (filename (plist-get args :filename))
+        (eval-in-buffer (plist-get args :eval-in-buffer)))
     (when res
       (with-current-buffer res
         (setq buffer-file-name filename)
@@ -21,7 +22,8 @@
         (set-buffer-modified-p nil)
         (run-hooks 'oook-after-display-hook)
         (view-mode -1) ;; disable view-mode even if viewmode is in ook-after-display-hook
-        ))
+        (when eval-in-buffer
+          (eval eval-in-buffer))))
     res))
 
 (defun oook-eval-buffer-to-file ()
