@@ -10,8 +10,8 @@
   "XML results pretty printer."
   :group 'oook)
 
-(defun oook-eval-to-file-handler (result &rest args)
-  (let ((res (apply oook-eval-handler result args))
+(defun oook-eval-to-file-handler (_id result &rest args)
+  (let ((res (apply oook-eval-handler _id result args))
         (filename (plist-get args :filename))
         (eval-in-buffer (plist-get args :eval-in-buffer)))
     (when res

@@ -15,12 +15,13 @@
 
 (defvar oook-pprint-old-handler nil)
 
-(defun oook-do-pprint (result &rest args)
+(defun oook-do-pprint (_id result &rest args)
   "Pretty print xml content first.
 
 See `oook' callback definition for RESULT and ARGS
 meaning."
   (let ((res (apply oook-pprint-old-handler
+                    _id
                     (mapcar
                      (lambda (result)
                        (with-temp-buffer
