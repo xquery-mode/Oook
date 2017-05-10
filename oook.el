@@ -131,9 +131,8 @@ ERRBACK if specified must have following signature:
   (let* ((arg (oook-escape xquery))
          (form (format (oook-get-form) arg))
          (nrepl-callback (apply #'oook-make-nrepl-handler callback errback args))
-         (connection (cider-current-connection))
-         (session oook-session))
-    (nrepl-request:eval form nrepl-callback connection session)))
+         (connection (cider-current-connection)))
+    (nrepl-request:eval form nrepl-callback connection)))
 
 (defun oook-eval-sync (xquery)
   "Eval specified XQUERY string synchronously."
@@ -141,8 +140,7 @@ ERRBACK if specified must have following signature:
   (let* ((arg (oook-escape xquery))
          (form (format (oook-get-form) arg))
          (connection (cider-current-connection))
-         (session oook-session)
-         (response (nrepl-sync-request:eval form connection session))
+         (response (nrepl-sync-request:eval form connection))
          (value (nrepl-dict-get response "value")))
     (and value (read value))))
 
