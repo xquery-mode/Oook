@@ -47,6 +47,29 @@ Grain access to the MarkLogic account.
         :content-base nil))
 ```
 
+## Recommendation of using Cider Stable
+
+You are advised to use the most recent stable version of Cider.
+If you are using melpa, you should pin Cider to melpa-stable,
+which you can do with an Emacs configuration along the lines of:
+
+```lisp
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa" . "http://melpa.org/packages/") t)
+(add-to-list 'package-archives
+             '("melpa-stable" . "http://stable.melpa.org/packages/") t)
+(add-to-list 'package-pinned-packages '(cider . "melpa-stable") t)
+(package-initialize)
+```
+
+If you want to use a more recent development version of Cider from
+melpa or GitHub, notice that Cider introduced an incompatible change
+on Jan 22, 2017. So if you want to use newer version of cider,
+please switch Oook to the branch fix-nrepl-eval-for-recent-cider:
+
+> git checkout fix-nrepl-eval-for-recent-cider
+
 ## Usage
 
 Start cider repl in the leiningen project.  Uruk library must be
